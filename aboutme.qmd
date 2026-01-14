@@ -2,8 +2,7 @@
 title: "About me"
 ---
 
-![](Pprofile.jpg){width=200}
-
+![](Pprofile.jpg){width="200"}
 
 ## Background
 
