@@ -3,8 +3,6 @@ title: "Data Analysis intro"
 format: html
 ---
 
-
-
 ## Introduction
 
 In this exercise we will use the `gapminder` dataset from the `dslabs` package
@@ -33,7 +31,6 @@ library(ggplot2) \# used for plotting
 
 library(broom) \# used to tidy lm() results
 
-
 ## Loading and Checking the data
 
 ```{r}
@@ -48,20 +45,17 @@ library("dslabs")
 str(gapminder)
 ```
 
-
 ```{r}
 # get a summary of data
 summary(gapminder)
 ```
-
 
 ```{r}
 # determine the type of object gapminder is
 class(gapminder)
 ```
 
-## Processing data 
-
+## Processing data
 
 ```{r}
 # Create a new object that keeps ONLY rows where continent == "Africa"
@@ -73,7 +67,6 @@ str(africadata)
 
 ```
 
-
 ```{r}
 # Get summary statistics for the Africa-only dataset
 summary(africadata)
@@ -83,7 +76,6 @@ summary(africadata)
 library(dplyr)
 
 ```
-
 
 ```{r}
 # Infant mortality vs life expectancy
@@ -104,10 +96,9 @@ summary(africa_pop_le)
 
 ```
 
-# Plotting 
+# Plotting
 
 Making plots for each of the new subsets.
-
 
 ```{r}
 # load ggplot2 here since we will make plots
@@ -116,7 +107,6 @@ library(ggplot2)
 
 ```
 
-
 ```{r}
 # Plot life expectancy as a function of infant mortality
 
@@ -124,7 +114,6 @@ ggplot(africa_im_le, aes(x = infant_mortality, y = life_expectancy)) +
 geom_point()
 
 ```
-
 
 ```{r}
 # Plot life expectancy as a function of population size (log scale)
@@ -135,7 +124,7 @@ scale_x_log10()
 
 ```
 
-# More data processing 
+# More data processing
 
 To understand which years have missing infant mortality data, we first check which years contain NA values for infant_mortality. Then we select a year with complete data.
 
@@ -150,7 +139,6 @@ filter(is.na(infant_mortality))
 table(africa_na$year)
 
 ```
-
 
 ```{r}
 # Keep only data from the year 2000
@@ -168,7 +156,6 @@ summary(africa_2000)
 # More Plotting
 
 We now repeat the same plots as before, but only using data from the year 2000.
-
 
 ```{r}
 
@@ -200,11 +187,9 @@ scale_x_log10()
 
 ```
 
-
-# A simple fit 
+# A simple fit
 
 We fit linear regression models using life expectancy as the response variable and infant mortality and population size as separate predictors, based on the Africa-only data from the year 2000.
-
 
 ```{r}
 # Fit 1: linear model with life expectancy as outcome and infant mortality as predictor (year 2000 only)
@@ -226,3 +211,101 @@ fit2 <- lm(life_expectancy ~ population, data = africa_2000)
 summary(fit2)
 
 ```
+
+# This section contribution by Austin_Hill
+
+```{r}
+#Load in dslabs
+library(dslabs)
+```
+
+```{r}
+#look at data 
+str(death_prob)
+summary(death_prob)
+```
+
+```{r}
+#Type of class the data is
+class(death_prob)
+```
+
+```{r}
+# add dplyr package 
+library(dplyr)
+```
+
+```{r}
+# Filter data to only females of the age of 16 +
+femaledata16 <- death_prob %>%
+  filter(sex == "Female", age >= 16)
+# look at femaledata
+str(femaledata16)
+summary(femaledata16)
+```
+
+```{r}
+# add ggplot
+library(ggplot2)
+```
+
+```{r}
+# plotting 16+ girls probability of death in the next year in the USA in 2015
+ggplot(femaledata16, aes(x = age, y = prob)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Probability of death vs Age (Females)",
+    x = "Age",
+    y = "Probability"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Filter data to only males of the age of 16 +
+maledata16 <- death_prob %>%
+  filter(sex == "Male", age >= 16)
+# look at femaledata
+str(maledata16)
+summary(maledata16)
+```
+
+```{r}
+# plotting 16+ males probability of death in the next year in the USA in 2015
+ggplot(maledata16, aes(x = age, y = prob)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Probability of death vs Age (Males)",
+    x = "Age",
+    y = "Probability"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Compare females and males 16+ for significant differnces in the data combined
+combined <- rbind(femaledata16, maledata16)
+
+model1 <- lm(prob ~ age + sex, data = combined)
+summary(model1)
+```
+
+# [**The Age effect**]{.underline}
+
+# age: Estimate = 0.0062232, p \< 2e-16 \*\*\*
+
+# Highly significant.
+
+# For each additional year of age, the probability increases by \~0.0062 on average.
+
+# This matches mortality expectations: older individuals have higher 1-year death risk.
+
+# [**Sex effect**]{.underline}
+
+# sexMale: Estimate = 0.0133138, p = 0.497
+
+# Not significant (p ≈ 0.5).
+
+# This means no evidence of a meaningful difference in overall mortality level between males and females in your sample once age is controlled for.So, in this model: Females and males appear similar in mortality probability after accounting for age.
