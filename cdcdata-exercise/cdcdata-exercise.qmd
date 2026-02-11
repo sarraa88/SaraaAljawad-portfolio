@@ -1,0 +1,252 @@
+---
+title: "CDC Data Exercise"
+format: html
+---
+
+
+## Introduction
+
+This analysis uses publicly available data from the Centers for Disease Control and Prevention (CDC)
+to explore the prevalence of post-COVID conditions (long COVID) among adults in the United States.
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(here)
+
+# Read CDC data
+raw <- read_csv(here("cdcdata-exercise", "Post-COVID_Conditions_20260206.csv"))
+
+# Inspect structure
+glimpse(raw)
+
+```
+
+
+## Data Description
+
+The dataset contains survey-based estimates from the CDC household Survey that describe the prevalence of post-COVID conditions (long COVID) among adults aged 18 and older in the United States.Each row in the dataset represents a population-level estimate for a specific
+group and time period. The main variables used in this analysis include the type
+of long COVID indicator being measured, population group and subgroup categories,
+the time period of data collection, and the estimated percentage value.
+
+## Data Cleaning
+
+```{r}
+# Clean column names
+data_clean <- raw %>%
+  clean_names()
+
+# Select relevant variables
+cdc_data <- data_clean %>%
+  select(
+    indicator,
+    group,
+    subgroup,
+    time_period_label,
+    value
+  )
+
+# Inspect cleaned dataset
+glimpse(cdc_data)
+
+```
+
+
+## Exploratory Data Analysis
+
+*Exploring the distribution and overall structure of the data* 
+```{r}
+# Summary statistics for the continuous variable
+cdc_data %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE),
+    sd_value   = sd(value, na.rm = TRUE),
+    min_value  = min(value, na.rm = TRUE),
+    max_value  = max(value, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+# Frequency table for indicator
+cdc_data %>%
+  count(indicator) %>%
+  mutate(percent = n / sum(n) * 100)
+
+```
+
+## Visualization of the data 
+
+```{r}
+# Histogram of percentage estimates
+ggplot(cdc_data, aes(x = value)) +
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Distribution of Post-COVID Percentage Estimates",
+    x = "Percentage Value",
+    y = "Count"
+  )
+
+```
+
+
+*The histogram shows the distribution of estimated percentages of adults experiencing post-COVID conditions across different population groups and time periods. Most estimates are concentrated below 30%, indicating that reported prevalence of long COVID is generally low to moderate for most groups. Higher percentage values occur less frequently and represent specific subgroups with elevated reported prevalence.*
+
+
+```{r}
+# Percentage distribution of groups
+cdc_data %>%
+  count(group) %>%
+  mutate(percent = round(n / sum(n) * 100, 1))
+
+```
+
+```{r}
+# Bar plot for categorical variable
+ggplot(cdc_data, aes(x = group)) +
+  geom_bar() +
+  labs(
+    title = "Distribution of CDC Estimate Groups",
+    x = "Group",
+    y = "Count"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+*It has been seen that most observations in the dataset come from state-level estimates, which account for over half of all records. Other estimates are distributed across demographic groupings such as age, race/ethnicity, education, and sex. National-level estimates represent a smaller proportion of the data, reflecting the CDC’s emphasis on reporting subgroup-specific prevalence estimates.*
+
+
+## *Explore and visualize Post-COVID prevalence* 
+
+### *(a) by age group*
+
+Age in this dataset is reported as categorical age groups rather than as individual ages. The CDC defines these groups as 18–29, 30–49, 50–64, and 65 years and older
+
+```{r}
+age_data <- cdc_data %>%
+  filter(group == "By Age")
+
+```
+
+```{r}
+age_summary <- age_data %>%
+  group_by(subgroup) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE)
+  )
+age_summary
+
+```
+
+```{r}
+ggplot(age_summary,
+       aes(x = reorder(subgroup, mean_value),
+           y = mean_value)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Average Post-COVID Percentage by Age Group",
+    x = "Age group",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal()
+
+```
+
+This summarizes CDC-reported post-COVID condition percentages across age groups. The visualization highlights which age groups tend to report higher or lower post-COVID prevalence.
+
+### *(b) by state*
+
+```{r}
+```{r}
+state_data <- cdc_data %>%
+  filter(group == "By State")
+
+```
+
+
+```{r}
+state_summary <- state_data %>%
+  group_by(subgroup) %>%   # subgroup = state name
+  summarize(
+    mean_value = mean(value, na.rm = TRUE)
+  )
+
+state_summary
+
+```
+
+
+```{r}
+state_top_bottom <- state_summary %>%
+  arrange(mean_value) %>%
+  slice(c(1:5, (n()-4):n()))
+
+state_top_bottom
+
+```
+
+```{r}
+ggplot(state_top_bottom,
+       aes(x = reorder(subgroup, mean_value),
+           y = mean_value)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Average Post-COVID Percentage by State (Lowest and Highest)",
+    x = "State",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal()
+
+```
+
+State-level post-COVID percentages were summarized in this plot by averaging CDC-reported estimates across time periods. The visualization highlights relative differences in reported post-COVID prevalence among states.
+
+### *(c) by sex*
+
+```{r}
+sex_data <- cdc_data %>%
+  filter(group == "By Sex")
+
+sex_summary <- sex_data %>%
+  group_by(subgroup) %>%
+  summarize(
+    mean_value = mean(value, na.rm = TRUE)
+  )
+
+sex_summary
+
+```
+
+```{r}
+ggplot(sex_summary,
+       aes(x = reorder(subgroup, mean_value),
+           y = mean_value,
+           fill = subgroup)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Average Reported Post-COVID Percentage by Sex",
+    x = "Sex",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal() +
+  guides(fill = "none")
+
+```
+
+*This figure compares average CDC-reported post-COVID condition percentages by sex. Females report a higher average post-COVID percentage than males.*
+
+## Notes for Synthetic Data Generation
+
+To create synthetic data with a similar structure, the key variable to mimic is `value` which represents the percentage of adults reporting post-COVID conditions. These percentage values ranges from 0 to about 93 with most values below 30. The synthetic data should also include the same categorical columns (such as `group`, `indicator`, and `subgroup`) and use similar proportions (for example, many rows should be state-level estimates, and fewer rows should be national or demographic estimates). In addition, the synthetic data should include survey `time periods` so that the overall structure matches the original dataset.
+
+
+
