@@ -71,7 +71,7 @@ cdc_data %>%
 
 ```{r}
 # Frequency table for indicator
-cdc_data %>%
+indicator_freq <- cdc_data %>%
   count(indicator) %>%
   mutate(percent = n / sum(n) * 100)
 
@@ -164,7 +164,6 @@ This summarizes CDC-reported post-COVID condition percentages across age groups.
 ### *(b) by state*
 
 ```{r}
-```{r}
 state_data <- cdc_data %>%
   filter(group == "By State")
 
@@ -248,5 +247,202 @@ ggplot(sex_summary,
 
 To create synthetic data with a similar structure, the key variable to mimic is `value` which represents the percentage of adults reporting post-COVID conditions. These percentage values ranges from 0 to about 93 with most values below 30. The synthetic data should also include the same categorical columns (such as `group`, `indicator`, and `subgroup`) and use similar proportions (for example, many rows should be state-level estimates, and fewer rows should be national or demographic estimates). In addition, the synthetic data should include survey `time periods` so that the overall structure matches the original dataset.
 
+# This section contributed by Joe Dainis
+```{r}
+## Load Required Packages
+library(here)
+library(dplyr)
+library(ggplot2)
+library(skimr)
+library(gtsummary)
 
+## Set Seed for Reproducibility
+set.seed(456)
+
+## Define the number of COVID-19 survey responders
+n_COVID <- 18638
+
+## Create an empty dataframe with the 5 variables from COVID-19 survey dataset
+
+syn_dat <- data.frame(
+  Indicator = character(n_COVID),
+  Group = character(n_COVID),
+  TimePeriodLabel = character(n_COVID),
+  Value = numeric(n_COVID)
+)
+
+## Variable 1: Indicator
+
+syn_dat$Indicator <- sample(c("Any activity limitations from long COVID, as a percentage of adults who currently have long COVID", "Any activity limitations from long COVID, as a percentage of all adults", "Currently experiencing long COVID, as a percentage of adults who ever had COVID", "Currently experiencing long COVID, as a percentage of all adults", "Ever experienced long COVID, as a percentage of adults who ever had COVID", "Ever experienced long COVID, as a percentage of all adults", "Ever had COVID", "Significant activity limitations from long COVID, as a percentage of adults who currently have long COVID", "Significant activity limitations from long COVID, as a percentage of all adults"),
+                          n_COVID, replace = TRUE, prob = as.numeric(indicator_freq$percent)/100)
+
+## Variable 2: Group
+syn_dat$Group <- sample(c("By Age", "By Disability Status", "By Education", "By Gender identity", "By Race/Hispanic ethnicity", "By Sex", "By Sexual orientation", "By State", "National Estimate"), 
+                         n_COVID, replace = TRUE, 
+                         prob = as.numeric(table(data_clean$group)/100))
+
+
+## Variable 3: Time Period Label
+target_column <- "time_period_label"
+
+time_probs <- prop.table(table(data_clean[[target_column]], useNA = "no"))
+
+syn_dat$TimePeriodLabel <- sample(
+  x = as.character(names(time_probs)), # Ensure this isn't NULL/Empty
+  size = n_COVID,
+  replace = TRUE,
+  prob = as.numeric(time_probs)
+)
+
+## Variable 4: Value with Dependencies 
+
+library(dplyr)
+library(purrr)
+
+# Split the original data into a list of dataframes based on 'group'
+## This creates a 'library' where each drawer only has one group's data
+source_list <- split(data_clean, data_clean$group)
+
+# Use group_split on syn_dat to process each group separately
+syn_dat <- syn_dat %>%
+  group_split(Group) %>%
+  map_dfr(function(sub_df) {
+    # Identify which group we are currently processing
+    current_group <- unique(sub_df$Group)
+    
+    # Check if this group actually exists in our source data
+    if (current_group %in% names(source_list)) {
+      pool <- source_list[[current_group]]
+      
+      # Sample indices equal to the number of rows needed for this group
+      sampled_rows <- sample(seq_len(nrow(pool)), size = nrow(sub_df), replace = TRUE)
+      
+      # Fill the Subgroup and Value columns from the matched pool
+      sub_df$Subgroup_Age_Sex_State <- pool$subgroup[sampled_rows]
+      sub_df$Value <- pool$value[sampled_rows]
+    }
+    
+    return(sub_df)
+  })
+
+#It took me a LONG while to figure this out due to the complexity of the data. I used Gemini AI to help me figure this out. Too many dependencies with all of them being in one column... ... ... Data structure matters a ton! I ended up needing to split the data first, as the subgroup column had SO MANY different categories (sex, age range, sexuality, state, etc etc.) Then, to add in the dependencies based on how the groupings were split, which allowed for the synthetic data to show the necessary depencies for the COVID values on these variables. All of the other variables were straight forward.
+
+view(syn_dat)
+
+#Joe Summaries of Variables and Data
+
+#Visualization of Percentage Values from synthetic data by histogram
+ggplot(syn_dat, aes(x = Value)) +
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Distribution of Post-COVID Synthetic Percentage Estimates",
+    x = "Percentage Values",
+    y = "Count"
+  )
+
+#Look at distribution of synthetic data from groups
+##Percentage distribution of groups
+syn_dat %>%
+  count(Group) %>%
+  mutate(percent = round(n / sum(n) * 100, 1))
+
+##Bar plot for group data
+ggplot(syn_dat, aes(x = Group)) +
+  geom_bar() +
+  labs (
+    title = "Distribution of synthetic CDC estimated groups",
+    x = "Group",
+    y = "Count"
+  ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Looking at the synthetic age data
+##Group the synthetic data by age
+Joe_age_data <- syn_dat %>%
+  filter(Group == "By Age")
+
+##Summarize the mean values for age ranges
+Joe_age_summary <- Joe_age_data %>%
+  group_by(Subgroup_Age_Sex_State) %>%
+  summarize(
+    mean_value_age = mean(Value, na.rm = TRUE)
+  )
+Joe_age_summary
+
+##Create a plot of age range and reported COVID prevalence
+ggplot(Joe_age_summary,
+       aes(x = reorder(Subgroup_Age_Sex_State, mean_value_age),
+           y = mean_value_age)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Average Post-COVID Percentage by Age Group",
+    x = "Age group",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal()
+
+#Looking at the synthetic state data
+##Group the synthetic data by state
+Joe_state_data <- syn_dat %>%
+  filter(Group == "By State")
+
+##Summarize the mean values for age ranges
+Joe_state_summary <- Joe_state_data %>%
+  group_by(Subgroup_Age_Sex_State) %>%
+  summarize(
+    mean_value_state = mean(Value, na.rm = TRUE)
+  )
+Joe_state_summary
+
+##Create a plot of state and reported COVID prevalence
+state_top_bottom_Joe <- Joe_state_summary %>%
+  arrange(mean_value_state) %>%
+  slice(c(1:5, (n()-4):n()))
+
+state_top_bottom_Joe
+
+ggplot(state_top_bottom_Joe,
+       aes(x = reorder(Subgroup_Age_Sex_State, mean_value_state),
+           y = mean_value_state)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Average Post-COVID Percentage by State",
+    x = "State",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal()
+
+#Looking at the synthetic age data
+##Group the synthetic data by sex
+Joe_sex_data <- syn_dat %>%
+  filter(Group == "By Sex")
+
+##Summarize the mean values for age ranges
+Joe_sex_summary <- Joe_sex_data %>%
+  group_by(Subgroup_Age_Sex_State) %>%
+  summarize(
+    mean_value_sex = mean(Value, na.rm = TRUE)
+  )
+Joe_sex_summary
+
+##Create a plot of age range and reported COVID prevalence
+ggplot(Joe_sex_summary,
+       aes(x = reorder(Subgroup_Age_Sex_State, mean_value_sex),
+           y = mean_value_sex,
+           fill = Subgroup_Age_Sex_State)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = c("Female" = "red", "Male" = "blue")) +
+  labs(
+    title = "Average Post-COVID Percentage by Sex",
+    x = "Sex",
+    y = "Average reported percentage (%)"
+  ) +
+  theme_minimal() +
+  guides(fill = "none")
+
+#It looks like my synthetic data is close to the original!
+```
 
