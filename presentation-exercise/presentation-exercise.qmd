@@ -9,7 +9,7 @@ execute:
 
 ## Introduction
 
-I am recreating the first figure shown in FiveThirtyEight’s article entitled,  
+I am recreating the last figure shown in FiveThirtyEight’s article entitled,  
 “The Rise And Fall Of Women’s NCAA Tournament Dynasties.”
 
 The original graphic visualizes seed point performance over time (1982–2018) 

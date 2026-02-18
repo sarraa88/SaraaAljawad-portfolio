@@ -305,14 +305,14 @@
     "href": "presentation-exercise/presentation-exercise.html",
     "title": "Presentation Exercise",
     "section": "",
-    "text": "I am recreating the first figure shown in FiveThirtyEight’s article entitled,\n“The Rise And Fall Of Women’s NCAA Tournament Dynasties.”\nThe original graphic visualizes seed point performance over time (1982–2018) for four dominant women’s college basketball programs: UConn, Notre Dame, Baylor, and Duke.\n\nknitr::include_graphics(\"original.png\")"
+    "text": "I am recreating the last figure shown in FiveThirtyEight’s article entitled,\n“The Rise And Fall Of Women’s NCAA Tournament Dynasties.”\nThe original graphic visualizes seed point performance over time (1982–2018) for four dominant women’s college basketball programs: UConn, Notre Dame, Baylor, and Duke.\n\nknitr::include_graphics(\"original.png\")"
   },
   {
     "objectID": "presentation-exercise/presentation-exercise.html#introduction",
     "href": "presentation-exercise/presentation-exercise.html#introduction",
     "title": "Presentation Exercise",
     "section": "",
-    "text": "I am recreating the first figure shown in FiveThirtyEight’s article entitled,\n“The Rise And Fall Of Women’s NCAA Tournament Dynasties.”\nThe original graphic visualizes seed point performance over time (1982–2018) for four dominant women’s college basketball programs: UConn, Notre Dame, Baylor, and Duke.\n\nknitr::include_graphics(\"original.png\")"
+    "text": "I am recreating the last figure shown in FiveThirtyEight’s article entitled,\n“The Rise And Fall Of Women’s NCAA Tournament Dynasties.”\nThe original graphic visualizes seed point performance over time (1982–2018) for four dominant women’s college basketball programs: UConn, Notre Dame, Baylor, and Duke.\n\nknitr::include_graphics(\"original.png\")"
   },
   {
     "objectID": "presentation-exercise/presentation-exercise.html#load-data",
