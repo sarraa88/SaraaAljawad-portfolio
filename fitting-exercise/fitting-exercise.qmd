@@ -1,0 +1,312 @@
+---
+title: "Fitting Exercise"
+format: html
+---
+
+## Loading and Checking the data
+The raw dataset contains repeated time‐series measurements of drug concentration (DV) over time (TIME) for each individual (ID). The data also includes dosing information (DOSE, AMT) and basic demographics (AGE, SEX, RACE, WT, HT).
+
+```{r}
+library(tidyverse)
+
+dat_raw <- read_csv("Mavoglurant_A2121_nmpk.csv")
+
+dim(dat_raw)
+head(dat_raw)
+```
+
+
+## Quick plot of concentration over time
+
+```{r}
+ggplot(dat_raw, aes(x = TIME, y = DV, group = ID)) +
+  geom_line(alpha = 0.5) +
+  facet_wrap(~ DOSE) +
+  labs(
+    x = "Time",
+    y = "DV (drug concentration)"
+  )
+```
+
+
+Plotting DV versus TIME (grouped by ID and stratified by DOSE): concentrations are highest shortly after dosing and decline over time. Higher dose groups appear to have higher concentration curves overall.
+
+## Remove OCC = 2
+
+```{r}
+dat1 <- dat_raw %>%
+  filter(OCC == 1)
+
+dim(dat1)
+table(dat_raw$OCC)
+
+```
+
+Some individuals have multiple occasions (OCC=1 and OCC=2), indicating repeated dosing/measurement periods. To keep the exercise simple and avoid having multiple trajectories per person, I kept only OCC=1 and removed OCC=2.
+
+## Compute total drug amount per individual (Y)
+
+```{r}
+y_df <- dat1 %>%
+  filter(TIME != 0) %>%
+  group_by(ID) %>%
+  summarize(Y = sum(DV, na.rm = TRUE))
+
+dim(y_df)
+head(y_df)
+
+```
+
+
+
+## Extract baseline rows (TIME = 0)
+
+```{r}
+base_df <- dat1 %>%
+  filter(TIME == 0)
+
+dim(base_df)
+head(base_df)
+
+```
+
+
+## Join baseline data with total drug (Y)
+
+```{r}
+dat_person <- base_df %>%
+  left_join(y_df, by = "ID")
+
+dim(dat_person)
+head(dat_person)
+
+```
+
+
+## Final cleaning
+
+```{r}
+dat_clean <- dat_person %>%
+  mutate(
+    SEX  = factor(SEX),
+    RACE = factor(RACE)
+  ) %>%
+  select(Y, DOSE, AGE, SEX, RACE, WT, HT) %>%
+  mutate(
+    SEX  = forcats::fct_drop(SEX),
+    RACE = forcats::fct_drop(RACE)
+  )
+
+dim(dat_clean)
+head(dat_clean)
+
+```
+
+
+## Summary statistics
+
+```{r}
+summary(dat_clean)
+
+dat_clean %>% count(DOSE)
+dat_clean %>% count(SEX)
+dat_clean %>% count(RACE)
+
+```
+
+
+## Relationship between Y and key predictors
+
+```{r}
+# Y vs DOSE 
+ggplot(dat_clean, aes(x = factor(DOSE), y = Y)) +
+  geom_boxplot() +
+  labs(x = "DOSE", y = "Total drug (Y)", title = "Y by DOSE")
+
+# Y vs SEX
+ggplot(dat_clean, aes(x = SEX, y = Y)) +
+  geom_boxplot() +
+  labs(x = "SEX", y = "Total drug (Y)", title = "Y by SEX")
+
+# Y vs AGE 
+ggplot(dat_clean, aes(x = AGE, y = Y)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "AGE", y = "Total drug (Y)", title = "Y vs AGE")
+```
+
+```{r}
+ggplot(dat_clean, aes(x = WT, y = Y)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "WT", y = "Total drug (Y)", title = "Y vs Weight")
+```
+
+
+```{r}
+ggplot(dat_clean, aes(x = HT, y = Y)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "HT", y = "Total drug (Y)", title = "Y vs Height")
+```
+
+## Distributions
+
+```{r}
+dat_clean %>%
+  pivot_longer(cols = c(Y, AGE, WT, HT),
+               names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Distributions of numeric variables")
+```
+
+## Pair/correlation plots
+
+```{r}
+# numeric-only correlation matrix
+cor_mat <- dat_clean %>%
+  select(Y, DOSE, AGE, WT, HT) %>%
+  cor()
+
+round(cor_mat, 2)
+```
+
+This suggests a strong positive relationship between Y and DOSE (cor ≈ 0.72), which is also visible in the boxplot of Y by dose. AGE shows little relationship with Y in this dataset. WT and HT are moderately correlated (cor ≈ 0.60).
+
+## Model fitting
+
+### Linear regression: Y - DOSE
+
+```{r}
+library(tidymodels)
+
+set.seed(123)
+
+# split into training/testing
+split1 <- initial_split(dat_clean, prop = 0.8)
+train1 <- training(split1)
+test1  <- testing(split1)
+
+# model specification
+lm_spec <- linear_reg() %>%
+  set_engine("lm")
+
+# workflow
+wf_lm_dose <- workflow() %>%
+  add_model(lm_spec) %>%
+  add_formula(Y ~ DOSE)
+
+# fit
+fit_lm_dose <- fit(wf_lm_dose, data = train1)
+
+# predict on test + metrics
+pred_lm_dose <- predict(fit_lm_dose, new_data = test1) %>%
+  bind_cols(test1 %>% select(Y))
+
+metrics(pred_lm_dose, truth = Y, estimate = .pred) %>%
+  filter(.metric %in% c("rmse", "rsq"))
+```
+
+The linear model using DOSE as the only predictor explains approximately 69% of the variability in Y (R² ≈ 0.69). The RMSE is about 483 units, meaning that predictions are on average about 483 units away from the observed total drug value.
+
+### Linear regression: Y - all predictors
+
+```{r}
+# workflow with all predictors
+wf_lm_all <- workflow() %>%
+  add_model(lm_spec) %>%
+  add_formula(Y ~ DOSE + AGE + SEX + RACE + WT + HT)
+
+# fit
+fit_lm_all <- fit(wf_lm_all, data = train1)
+
+# predict on test + metrics
+pred_lm_all <- predict(fit_lm_all, new_data = test1) %>%
+  bind_cols(test1 %>% select(Y))
+
+metrics(pred_lm_all, truth = Y, estimate = .pred) %>%
+  filter(.metric %in% c("rmse", "rsq"))
+```
+
+Adding AGE, SEX, RACE, WT, and HT did not improve predictive performance. In fact, the test-set RMSE increased slightly (483 to 494) and R² decreased (0.687 to 0.662). This suggests that DOSE already captures most of the explainable variation in Y, and the additional predictors add little signal (or add noise) in this dataset. 
+
+### Logistic regression: SEX - DOSE
+
+```{r}
+set.seed(123)
+
+split2 <- initial_split(dat_clean, prop = 0.8, strata = SEX)
+train2 <- training(split2)
+test2  <- testing(split2)
+
+# logistic model specification
+log_spec <- logistic_reg() %>%
+  set_engine("glm")
+
+
+wf_log_dose <- workflow() %>%
+  add_model(log_spec) %>%
+  add_formula(SEX ~ DOSE)
+
+# fit
+fit_log_dose <- fit(wf_log_dose, data = train2)
+
+# predict probabilities
+pred_log_dose <- predict(fit_log_dose, test2, type = "prob") %>%
+  bind_cols(predict(fit_log_dose, test2)) %>%
+  bind_cols(test2 %>% select(SEX))
+
+# compute metrics
+metric_set(accuracy, roc_auc)(pred_log_dose,
+                              truth = SEX,
+                              estimate = .pred_class,
+                              .pred_1)
+```
+
+The model shows high accuracy (0.84), but the ROC-AUC is ~0.49, which is essentially random (≈0.5). The high accuracy is likely driven by class imbalance (most observations are in one SEX category), so a model that predicts the majority class most of the time can achieve high accuracy without being truly predictive. Overall, DOSE does not appear to meaningfully predict SEX.
+
+### Logistic regression: SEX - all predictors
+
+
+```{r}
+
+set.seed(123)
+
+# split
+split2 <- initial_split(dat_clean, prop = 0.8, strata = SEX)
+train2 <- training(split2)
+test2  <- testing(split2)
+
+# logistic model specification
+log_spec <- logistic_reg() %>%
+  set_engine("glm")
+
+# with all predictors
+wf_log_all <- workflow() %>%
+  add_model(log_spec) %>%
+  add_formula(SEX ~ DOSE + AGE + RACE + WT + HT)
+
+# fit
+fit_log_all <- fit(wf_log_all, data = train2)
+
+# predict probabilities + classes on test set
+pred_log_all <- predict(fit_log_all, test2, type = "prob") %>%
+  bind_cols(predict(fit_log_all, test2)) %>%   # adds .pred_class
+  bind_cols(test2 %>% select(SEX))
+
+# compute metrics
+metric_set(accuracy, roc_auc)(
+  pred_log_all,
+  truth = SEX,
+  estimate = .pred_class,
+  .pred_1
+)
+```
+
+The model achieved very high performance on this test split, but the test set is small and imbalanced, so these metrics may be unstable or overly optimistic. Results should be interpreted carefully.
+
+### Summary 
+
+Overall, DOSE was a strong predictor of the continuous outcome Y, explaining a substantial portion of its variability. Adding additional baseline predictors did not improve performance meaningfully. For the categorical outcome SEX, predictive performance varied depending on the model and evaluation strategy, and results should be interpreted carefully due to class imbalance. This exercise illustrates the complete modeling workflow, including data splitting, model fitting, prediction, and evaluation.
