@@ -4,10 +4,11 @@ format: html
 ---
 
 ## Loading and Checking the data
-The raw dataset contains repeated time‐series measurements of drug concentration (DV) over time (TIME) for each individual (ID). The data also includes dosing information (DOSE, AMT) and basic demographics (AGE, SEX, RACE, WT, HT).
+The raw dataset contains repeated time‐series measurements of drug concentration (DV) over time (TIME) for each individual (ID). The data also includes dosing information (DOSE, AMT) and basic demographics (AGE, SEX, RACE WT, HT).
 
 ```{r}
 library(tidyverse)
+
 
 dat_raw <- read_csv("Mavoglurant_A2121_nmpk.csv")
 
@@ -112,6 +113,7 @@ dat_clean %>% count(DOSE)
 dat_clean %>% count(SEX)
 dat_clean %>% count(RACE)
 
+
 ```
 
 
@@ -175,7 +177,6 @@ round(cor_mat, 2)
 
 This suggests a strong positive relationship between Y and DOSE (cor ≈ 0.72), which is also visible in the boxplot of Y by dose. AGE shows little relationship with Y in this dataset. WT and HT are moderately correlated (cor ≈ 0.60).
 
-## Model fitting
 
 ### Linear regression: Y - DOSE
 
@@ -211,6 +212,8 @@ metrics(pred_lm_dose, truth = Y, estimate = .pred) %>%
 
 The linear model using DOSE as the only predictor explains approximately 69% of the variability in Y (R² ≈ 0.69). The RMSE is about 483 units, meaning that predictions are on average about 483 units away from the observed total drug value.
 
+
+
 ### Linear regression: Y - all predictors
 
 ```{r}
@@ -230,7 +233,7 @@ metrics(pred_lm_all, truth = Y, estimate = .pred) %>%
   filter(.metric %in% c("rmse", "rsq"))
 ```
 
-Adding AGE, SEX, RACE, WT, and HT did not improve predictive performance. In fact, the test-set RMSE increased slightly (483 to 494) and R² decreased (0.687 to 0.662). This suggests that DOSE already captures most of the explainable variation in Y, and the additional predictors add little signal (or add noise) in this dataset. 
+Adding AGE, SEX, RACE, WT, and HT did not improve predictive performance. In fact, the test-set RMSE increased slightly (483 to 494) and R² decreased (0.687 to 0.662). This suggests that DOSE already captures most of the explainable variation in Y, and the additional predictors add little signal (or add noise) in this dataset.
 
 ### Logistic regression: SEX - DOSE
 
@@ -263,6 +266,7 @@ metric_set(accuracy, roc_auc)(pred_log_dose,
                               truth = SEX,
                               estimate = .pred_class,
                               .pred_1)
+
 ```
 
 The model shows high accuracy (0.84), but the ROC-AUC is ~0.49, which is essentially random (≈0.5). The high accuracy is likely driven by class imbalance (most observations are in one SEX category), so a model that predicts the majority class most of the time can achieve high accuracy without being truly predictive. Overall, DOSE does not appear to meaningfully predict SEX.
@@ -303,6 +307,7 @@ metric_set(accuracy, roc_auc)(
   estimate = .pred_class,
   .pred_1
 )
+
 ```
 
 The model achieved very high performance on this test split, but the test set is small and imbalanced, so these metrics may be unstable or overly optimistic. Results should be interpreted carefully.
@@ -310,3 +315,160 @@ The model achieved very high performance on this test split, but the test set is
 ### Summary 
 
 Overall, DOSE was a strong predictor of the continuous outcome Y, explaining a substantial portion of its variability. Adding additional baseline predictors did not improve performance meaningfully. For the categorical outcome SEX, predictive performance varied depending on the model and evaluation strategy, and results should be interpreted carefully due to class imbalance. This exercise illustrates the complete modeling workflow, including data splitting, model fitting, prediction, and evaluation.
+
+# Module 10: Model Improvement
+
+## Data Prep
+
+
+```{r}
+# remove RACE variable
+data6 <- dat_person %>%
+  mutate(
+    SEX = factor(SEX)
+  ) %>%
+  select(Y, DOSE, AGE, SEX, WT, HT) %>%
+  mutate(
+    SEX = forcats::fct_drop(SEX)
+  )
+
+# set seed
+rngseed <- 1234
+set.seed(rngseed)
+
+# data split
+data_split <- initial_split(data6, prop = 3/4)
+
+# create train/test sets
+train_data <- training(data_split)
+test_data  <- testing(data_split)
+```
+
+## Model Fitting
+
+
+```{r}
+library(tidymodels)
+
+# model specification
+lm_mod <- linear_reg() %>%
+  set_engine("lm")
+
+# fit model 1 (Y ~ DOSE)
+lm_fit_10_1 <- lm_mod %>%
+  fit(Y ~ DOSE, data = train_data)
+
+lm_fit_10_1
+```
+
+
+```{r}
+# fit model 2 (Y ~ all predictors)
+lm_fit_10_2 <- lm_mod %>%
+  fit(Y ~ ., data = train_data)
+
+lm_fit_10_2
+```
+
+## Model Performance Assessment 1
+
+
+```{r}
+# predictions for model 1
+preds_10_1 <- predict(lm_fit_10_1, new_data = train_data) %>%
+  bind_cols(train_data %>% select(Y))
+
+rmse(preds_10_1, truth = Y, estimate = .pred)
+rsq(preds_10_1, truth = Y, estimate = .pred)
+```
+
+```{r}
+# predictions for model 2
+preds_10_2 <- predict(lm_fit_10_2, new_data = train_data) %>%
+  bind_cols(train_data %>% select(Y))
+
+rmse(preds_10_2, truth = Y, estimate = .pred)
+rsq(preds_10_2, truth = Y, estimate = .pred)
+```
+
+
+```{r}
+# null model
+null_mod <- null_model(mode = "regression") %>%
+  set_engine("parsnip")
+
+null_fit <- null_mod %>%
+  fit(Y ~ 1, data = train_data)
+
+null_preds <- predict(null_fit, new_data = train_data) %>%
+  bind_cols(train_data %>% select(Y))
+
+rmse(null_preds, truth = Y, estimate = .pred)
+```
+
+The null model shows the highest RMSE, indicating the poorest performance. The DOSE-only model performs better, while the model including all predictors achieves the lowest RMSE. This suggests that adding AGE, SEX, WT, and HT improves prediction of Y compared to using DOSE alone.
+
+## Model Performance Assessment 2
+
+```{r}
+# create 10-fold cross-validation splits
+set.seed(rngseed)
+folds <- vfold_cv(train_data, v = 10)
+```
+
+```{r}
+# perform cross-validation for model 1
+cv_fit1 <- lm_mod %>%
+  fit_resamples(
+    Y ~ DOSE,
+    resamples = folds,
+    metrics = metric_set(rmse)
+  )
+
+collect_metrics(cv_fit1)
+```
+
+
+```{r}
+# perform cross-validation for model 2
+cv_fit2 <- lm_mod %>%
+  fit_resamples(
+    Y ~ .,
+    resamples = folds,
+    metrics = metric_set(rmse)
+  )
+
+collect_metrics(cv_fit2)
+```
+
+Using 10-fold cross-validation, the RMSE for the DOSE-only model was approximately 691, while the model including all predictors achieved a lower RMSE of about 646. Compared to the earlier training-based estimates, the RMSE values are slightly higher, which is expected since cross-validation provides a more realistic estimate of performance on unseen data.
+
+The model with all predictors still performs better than the DOSE-only model, indicating that the additional variables provide some predictive value when evaluated more robustly. The standard errors indicate some variability across folds, reflecting the limited sample size and the impact of random data splitting.
+
+```{r}
+# run CV again with a different seed
+rngseed2 <- 5678
+set.seed(rngseed2)
+
+folds2 <- vfold_cv(train_data, v = 10)
+
+cv_fit3 <- lm_mod %>%
+  fit_resamples(
+    Y ~ DOSE,
+    resamples = folds2,
+    metrics = metric_set(rmse)
+  )
+
+collect_metrics(cv_fit3)
+cv_fit4 <- lm_mod %>%
+  fit_resamples(
+    Y ~ .,
+    resamples = folds2,
+    metrics = metric_set(rmse)
+  )
+
+collect_metrics(cv_fit4)
+
+```
+
+Repeating the cross-validation with a different random seed resulted in slightly different RMSE values for both models. This variation is expected due to randomness in the data splitting process. However, the overall pattern remained consistent, with the model including all predictors continuing to outperform the DOSE-only model.
