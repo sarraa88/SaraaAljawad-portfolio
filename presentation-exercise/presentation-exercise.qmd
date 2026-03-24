@@ -17,8 +17,8 @@ for four dominant women’s college basketball programs: UConn, Notre Dame,
 Baylor, and Duke. 
 
 ```{r}
-knitr::include_graphics("original.png")
-
+library(here)
+knitr::include_graphics(here("presentation-exercise","original.png"))
 ```
 
 
@@ -27,7 +27,7 @@ knitr::include_graphics("original.png")
 ```{r}
 library(tidyverse)
 
-df <- read_csv("ncaa-womens-basketball-tournament-history.csv")
+df <- read_csv(here("presentation-exercise","ncaa-womens-basketball-tournament-history.csv"))
 
 glimpse(df)
 ```
