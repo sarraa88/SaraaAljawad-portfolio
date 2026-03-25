@@ -8,9 +8,10 @@ The raw dataset contains repeated time‐series measurements of drug concentrati
 
 ```{r}
 library(tidyverse)
+library(here)
 
 
-dat_raw <- read_csv("Mavoglurant_A2121_nmpk.csv")
+dat_raw <- read_csv(here("fitting-exercise","Mavoglurant_A2121_nmpk.csv"))
 
 dim(dat_raw)
 head(dat_raw)
@@ -472,3 +473,174 @@ collect_metrics(cv_fit4)
 ```
 
 Repeating the cross-validation with a different random seed resulted in slightly different RMSE values for both models. This variation is expected due to randomness in the data splitting process. However, the overall pattern remained consistent, with the model including all predictors continuing to outperform the DOSE-only model.
+
+# **This section is added by Austin Hill**
+
+```{r}
+# load packages 
+library(tidyverse)
+library(tidymodels)
+```
+
+```{r}
+# Create a combined data frame of observed and predicted values for all 3 original models
+
+# Model 1 plotting data
+model1_plot_df <- preds_10_1 %>%
+  rename(observed = Y) %>%
+  mutate(model = "Model 1: Y ~ DOSE")
+
+# Model 2 plotting data
+model2_plot_df <- preds_10_2 %>%
+  rename(observed = Y) %>%
+  mutate(model = "Model 2: Y ~ all predictors")
+
+# Null model plotting data
+null_plot_df <- null_preds %>%
+  rename(observed = Y) %>%
+  mutate(model = "Null model")
+
+# Combine all three models into one data frame
+all_model_preds <- bind_rows(
+  model1_plot_df,
+  model2_plot_df,
+  null_plot_df
+)
+
+# Inspect combined plotting data
+glimpse(all_model_preds)
+```
+
+```{r}
+# Plot observed vs predicted for all 3 models
+
+ggplot(
+  all_model_preds,
+  aes(x = observed, y = .pred, color = model, shape = model)
+) +
+  geom_point(alpha = 0.6) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_cartesian(xlim = c(0, 5000), ylim = c(0, 5000)) +
+  labs(
+    title = "Observed vs Predicted Values for Three Models",
+    x = "Observed Values",
+    y = "Predicted Values",
+    color = "Model",
+    shape = "Model"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Create residuals for Model 2
+
+model2_resid_df <- preds_10_2 %>%
+  rename(observed = Y) %>%
+  mutate(residual = .pred - observed) %>%
+  select(observed, .pred, residual)
+
+glimpse(model2_resid_df)
+```
+```{r}
+# Create symmetric y-axis limits
+
+max_abs_resid <- max(abs(model2_resid_df$residual), na.rm = TRUE)
+```
+```{r}
+# Plot predicted vs residuals for Model 2
+
+ggplot(model2_resid_df, aes(x = .pred, y = residual)) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  coord_cartesian(ylim = c(-max_abs_resid, max_abs_resid)) +
+  labs(
+    title = "Predicted Values vs Residuals for Model 2",
+    x = "Predicted Values",
+    y = "Residuals (Predicted - Observed)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Re-set seed and create 100 bootstrap samples using the training data
+
+set.seed(rngseed)
+
+boot_splits <- bootstraps(train_data, times = 100)
+
+boot_splits
+
+```
+
+```{r}
+# Fit Model 2 to each bootstrap sample and predict on the original training data
+
+boot_pred_list <- map(boot_splits$splits, function(split) {
+  
+  boot_train <- analysis(split)
+  
+  # Re-fit Model 2 using the same model spec as before
+  boot_fit <- lm_mod %>%
+    fit(Y ~ ., data = boot_train)
+  
+  # Predict on the original training data
+  predict(boot_fit, new_data = train_data) %>%
+    pull(.pred)
+})
+```
+```{r}
+# Convert bootstrap predictions to a matrix
+# Rows = training observations
+# Columns = bootstrap samples
+
+boot_pred_mat <- do.call(cbind, boot_pred_list)
+
+dim(boot_pred_mat)
+```
+
+```{r}
+# Create summary data frame with observed values, original point estimates, and bootstrap summaries
+
+boot_summary_df <- tibble(
+  observed = train_data$Y,
+  point_estimate = preds_10_2$.pred,
+  boot_mean = apply(boot_pred_mat, 1, mean, na.rm = TRUE),
+  boot_median = apply(boot_pred_mat, 1, median, na.rm = TRUE),
+  lower_ci = apply(boot_pred_mat, 1, quantile, probs = 0.025, na.rm = TRUE),
+  upper_ci = apply(boot_pred_mat, 1, quantile, probs = 0.975, na.rm = TRUE)
+)
+
+glimpse(boot_summary_df)
+```
+
+```{r}
+# Plot observed values vs original predictions,bootstrap median, and bootstrap CI limits
+
+ggplot(boot_summary_df, aes(x = observed)) +
+  geom_point(aes(y = point_estimate, color = "Original Prediction"), alpha = 0.6) +
+  geom_point(aes(y = boot_median, color = "Bootstrap Median"), alpha = 0.6) +
+  geom_point(aes(y = lower_ci, color = "Lower Confidence Interval"), alpha = 0.5) +
+  geom_point(aes(y = upper_ci, color = "Upper Confidence Interval"), alpha = 0.5) +
+  
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  
+  scale_color_manual(
+    name = "Prediction Type",
+    values = c(
+      "Original Prediction" = "black", 
+      "Bootstrap Median" = "blue", 
+      "Lower Confidence Interval" = "red", # Added missing comma here
+      "Upper Confidence Interval" = "green" # Fixed capitalization to match above
+    )
+  ) +
+  
+  coord_equal(xlim = c(0, 5000), ylim = c(0, 5000)) +
+  labs(
+    title = "Observed vs Predicted Values with Bootstrap Uncertainty",
+    x = "Observed Values",
+    y = "Predicted Values"
+  ) +
+  theme_minimal()
+```
+# Discussion
+This plot shows that the model is moderately accurate, as the points generally cluster around the dashed 45-degree line, though there is a noticeable amount of scatter. The vertical distance between the green (upper) and red (lower) points reveals maybe some prediction uncertainty. The black and blue dots are very tightly clustered. This means the model's central tendency is reliable and isn't being wildly tossed around by small changes in the training data.
