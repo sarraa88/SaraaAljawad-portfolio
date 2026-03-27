@@ -209,7 +209,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>here() starts at C:/SaraaAljawad-portfolio</code></pre>
+<pre><code>here() starts at C:/Users/PC/Documents/GitHub/SaraaAljawad-portfolio</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="fu">here</span>(<span class="st">"presentation-exercise"</span>,<span class="st">"original.png"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
@@ -227,10 +227,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.6
+✔ dplyr     1.2.0     ✔ readr     2.1.6
 ✔ forcats   1.0.1     ✔ stringr   1.6.0
 ✔ ggplot2   4.0.1     ✔ tibble    3.3.1
-✔ lubridate 1.9.4     ✔ tidyr     1.3.2
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
 ✔ purrr     1.2.1     
 ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ✖ dplyr::filter() masks stats::filter()
@@ -483,106 +483,105 @@ Attaching package: 'janitor'</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gt)</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gtExtras)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'gtExtras' was built under R version 4.5.3</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>dec_summary <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(seed_points <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span>   <span class="co"># keep only tournament years (non-zero)</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">decade =</span> <span class="fu">case_when</span>(</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">1982</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">1989</span> <span class="sc">~</span> <span class="st">"1980s"</span>,</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">1990</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">1999</span> <span class="sc">~</span> <span class="st">"1990s"</span>,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">2000</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">2009</span> <span class="sc">~</span> <span class="st">"2000s"</span>,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">2010</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">2018</span> <span class="sc">~</span> <span class="st">"2010s"</span>,</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(decade)) <span class="sc">%&gt;%</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program, decade) <span class="sc">%&gt;%</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">decade_avg =</span> <span class="fu">mean</span>(seed_points, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>overall_summary <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(seed_points <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span>   <span class="co"># counts only years they made tournament (non-zero after fill)</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">overall_avg =</span> <span class="fu">mean</span>(seed_points, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">tourney_appearances =</span> <span class="fu">n</span>(),</span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>best_decade <span class="ot">&lt;-</span> dec_summary <span class="sc">%&gt;%</span></span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(decade_avg, <span class="at">n =</span> <span class="dv">1</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">best_decade =</span> decade, <span class="at">best_decade_avg =</span> decade_avg)</span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>table_custom <span class="ot">&lt;-</span> overall_summary <span class="sc">%&gt;%</span></span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(best_decade, <span class="at">by =</span> <span class="st">"program"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(overall_avg)) <span class="sc">%&gt;%</span></span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(</span>
-<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">TEAM =</span> program,</span>
-<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span> <span class="ot">=</span> overall_avg,</span>
-<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Best decade</span><span class="st">`</span> <span class="ot">=</span> best_decade,</span>
-<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span> <span class="ot">=</span> best_decade_avg,</span>
-<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Tournament appearances</span><span class="st">`</span> <span class="ot">=</span> tourney_appearances</span>
-<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>spark_df <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
-<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
-<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(year) <span class="sc">%&gt;%</span></span>
-<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">Trend =</span> <span class="fu">list</span>(seed_points), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
-<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>table_custom <span class="ot">&lt;-</span> table_custom <span class="sc">%&gt;%</span></span>
-<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(spark_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"TEAM"</span> <span class="ot">=</span> <span class="st">"program"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(Trend, <span class="at">.after =</span> TEAM)</span>
-<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a><span class="fu">gt</span>(table_custom) <span class="sc">%&gt;%</span></span>
-<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(</span>
-<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">md</span>(<span class="st">"**Program summary from seed-points (1982–2018)**"</span>)</span>
-<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_caption</span>(</span>
-<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>    <span class="fu">md</span>(<span class="st">"**Table:** Overall and best-decade seed-point summaries for the four highlighted programs."</span>)</span>
-<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cols_label</span>(<span class="at">Trend =</span> <span class="st">"Trend"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>), <span class="at">decimals =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>),</span>
-<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(<span class="at">columns =</span> TEAM)</span>
-<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a> </span>
-<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt_plt_sparkline</span>(<span class="at">column =</span> Trend, <span class="at">same_limit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data_color</span>(</span>
-<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>),</span>
-<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">method =</span> <span class="st">"numeric"</span>,</span>
-<span id="cb18-70"><a href="#cb18-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">palette =</span> <span class="fu">c</span>(<span class="st">"#fee5d9"</span>, <span class="st">"#fcae91"</span>, <span class="st">"#fb6a4a"</span>, <span class="st">"#cb181d"</span>)</span>
-<span id="cb18-71"><a href="#cb18-71" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-72"><a href="#cb18-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_spanner</span>(</span>
-<span id="cb18-73"><a href="#cb18-73" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"Seed points (0–100)"</span>,</span>
-<span id="cb18-74"><a href="#cb18-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>)</span>
-<span id="cb18-75"><a href="#cb18-75" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb18-76"><a href="#cb18-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_source_note</span>(</span>
-<span id="cb18-77"><a href="#cb18-77" aria-hidden="true" tabindex="-1"></a>    <span class="at">source_note =</span> <span class="fu">md</span>(<span class="st">"*This table summarizes the same seed-points values used in the recreated figure. Higher values indicate stronger average seeding.*"</span>)</span>
-<span id="cb18-78"><a href="#cb18-78" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gtExtras)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>dec_summary <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(seed_points <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span>   <span class="co"># keep only tournament years (non-zero)</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">decade =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">1982</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">1989</span> <span class="sc">~</span> <span class="st">"1980s"</span>,</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">1990</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">1999</span> <span class="sc">~</span> <span class="st">"1990s"</span>,</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">2000</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">2009</span> <span class="sc">~</span> <span class="st">"2000s"</span>,</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>      year <span class="sc">&gt;=</span> <span class="dv">2010</span> <span class="sc">&amp;</span> year <span class="sc">&lt;=</span> <span class="dv">2018</span> <span class="sc">~</span> <span class="st">"2010s"</span>,</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(decade)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program, decade) <span class="sc">%&gt;%</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">decade_avg =</span> <span class="fu">mean</span>(seed_points, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>overall_summary <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(seed_points <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span>   <span class="co"># counts only years they made tournament (non-zero after fill)</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">overall_avg =</span> <span class="fu">mean</span>(seed_points, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">tourney_appearances =</span> <span class="fu">n</span>(),</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>best_decade <span class="ot">&lt;-</span> dec_summary <span class="sc">%&gt;%</span></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(decade_avg, <span class="at">n =</span> <span class="dv">1</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">best_decade =</span> decade, <span class="at">best_decade_avg =</span> decade_avg)</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>table_custom <span class="ot">&lt;-</span> overall_summary <span class="sc">%&gt;%</span></span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(best_decade, <span class="at">by =</span> <span class="st">"program"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(overall_avg)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">TEAM =</span> program,</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span> <span class="ot">=</span> overall_avg,</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Best decade</span><span class="st">`</span> <span class="ot">=</span> best_decade,</span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span> <span class="ot">=</span> best_decade_avg,</span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Tournament appearances</span><span class="st">`</span> <span class="ot">=</span> tourney_appearances</span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a>spark_df <span class="ot">&lt;-</span> plot_df <span class="sc">%&gt;%</span></span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(program) <span class="sc">%&gt;%</span></span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(year) <span class="sc">%&gt;%</span></span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">Trend =</span> <span class="fu">list</span>(seed_points), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a>table_custom <span class="ot">&lt;-</span> table_custom <span class="sc">%&gt;%</span></span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(spark_df, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"TEAM"</span> <span class="ot">=</span> <span class="st">"program"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(Trend, <span class="at">.after =</span> TEAM)</span>
+<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a><span class="fu">gt</span>(table_custom) <span class="sc">%&gt;%</span></span>
+<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(</span>
+<span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">md</span>(<span class="st">"**Program summary from seed-points (1982–2018)**"</span>)</span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_caption</span>(</span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a>    <span class="fu">md</span>(<span class="st">"**Table:** Overall and best-decade seed-point summaries for the four highlighted programs."</span>)</span>
+<span id="cb16-64"><a href="#cb16-64" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cols_label</span>(<span class="at">Trend =</span> <span class="st">"Trend"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>), <span class="at">decimals =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
+<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>),</span>
+<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(<span class="at">columns =</span> TEAM)</span>
+<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt_plt_sparkline</span>(<span class="at">column =</span> Trend, <span class="at">same_limit =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data_color</span>(</span>
+<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>),</span>
+<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">method =</span> <span class="st">"numeric"</span>,</span>
+<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>    <span class="at">palette =</span> <span class="fu">c</span>(<span class="st">"#fee5d9"</span>, <span class="st">"#fcae91"</span>, <span class="st">"#fb6a4a"</span>, <span class="st">"#cb181d"</span>)</span>
+<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_spanner</span>(</span>
+<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">"Seed points (0–100)"</span>,</span>
+<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Overall avg</span><span class="st">`</span>, <span class="st">`</span><span class="at">Best decade avg</span><span class="st">`</span>)</span>
+<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_source_note</span>(</span>
+<span id="cb16-83"><a href="#cb16-83" aria-hidden="true" tabindex="-1"></a>    <span class="at">source_note =</span> <span class="fu">md</span>(<span class="st">"*This table summarizes the same seed-points values used in the recreated figure. Higher values indicate stronger average seeding.*"</span>)</span>
+<span id="cb16-84"><a href="#cb16-84" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div id="mfgqhhjbtj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#mfgqhhjbtj table {
+<div id="pchvjqtevt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#pchvjqtevt table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#mfgqhhjbtj thead, #mfgqhhjbtj tbody, #mfgqhhjbtj tfoot, #mfgqhhjbtj tr, #mfgqhhjbtj td, #mfgqhhjbtj th {
+#pchvjqtevt thead, #pchvjqtevt tbody, #pchvjqtevt tfoot, #pchvjqtevt tr, #pchvjqtevt td, #pchvjqtevt th {
   border-style: none;
 }
 
-#mfgqhhjbtj p {
+#pchvjqtevt p {
   margin: 0;
   padding: 0;
 }
 
-#mfgqhhjbtj .gt_table {
+#pchvjqtevt .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -608,12 +607,12 @@ Attaching package: 'janitor'</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_caption {
+#pchvjqtevt .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#mfgqhhjbtj .gt_title {
+#pchvjqtevt .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -625,7 +624,7 @@ Attaching package: 'janitor'</code></pre>
   border-bottom-width: 0;
 }
 
-#mfgqhhjbtj .gt_subtitle {
+#pchvjqtevt .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -637,7 +636,7 @@ Attaching package: 'janitor'</code></pre>
   border-top-width: 0;
 }
 
-#mfgqhhjbtj .gt_heading {
+#pchvjqtevt .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -649,13 +648,13 @@ Attaching package: 'janitor'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_bottom_border {
+#pchvjqtevt .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_col_headings {
+#pchvjqtevt .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -670,7 +669,7 @@ Attaching package: 'janitor'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_col_heading {
+#pchvjqtevt .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -690,7 +689,7 @@ Attaching package: 'janitor'</code></pre>
   overflow-x: hidden;
 }
 
-#mfgqhhjbtj .gt_column_spanner_outer {
+#pchvjqtevt .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -702,15 +701,15 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 4px;
 }
 
-#mfgqhhjbtj .gt_column_spanner_outer:first-child {
+#pchvjqtevt .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#mfgqhhjbtj .gt_column_spanner_outer:last-child {
+#pchvjqtevt .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#mfgqhhjbtj .gt_column_spanner {
+#pchvjqtevt .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -722,11 +721,11 @@ Attaching package: 'janitor'</code></pre>
   width: 100%;
 }
 
-#mfgqhhjbtj .gt_spanner_row {
+#pchvjqtevt .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#mfgqhhjbtj .gt_group_heading {
+#pchvjqtevt .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -752,7 +751,7 @@ Attaching package: 'janitor'</code></pre>
   text-align: left;
 }
 
-#mfgqhhjbtj .gt_empty_group_heading {
+#pchvjqtevt .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -767,15 +766,15 @@ Attaching package: 'janitor'</code></pre>
   vertical-align: middle;
 }
 
-#mfgqhhjbtj .gt_from_md > :first-child {
+#pchvjqtevt .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#mfgqhhjbtj .gt_from_md > :last-child {
+#pchvjqtevt .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#mfgqhhjbtj .gt_row {
+#pchvjqtevt .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -794,7 +793,7 @@ Attaching package: 'janitor'</code></pre>
   overflow-x: hidden;
 }
 
-#mfgqhhjbtj .gt_stub {
+#pchvjqtevt .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -807,7 +806,7 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 5px;
 }
 
-#mfgqhhjbtj .gt_stub_row_group {
+#pchvjqtevt .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -821,15 +820,15 @@ Attaching package: 'janitor'</code></pre>
   vertical-align: top;
 }
 
-#mfgqhhjbtj .gt_row_group_first td {
+#pchvjqtevt .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#mfgqhhjbtj .gt_row_group_first th {
+#pchvjqtevt .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#mfgqhhjbtj .gt_summary_row {
+#pchvjqtevt .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -839,16 +838,16 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 5px;
 }
 
-#mfgqhhjbtj .gt_first_summary_row {
+#pchvjqtevt .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_first_summary_row.thick {
+#pchvjqtevt .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#mfgqhhjbtj .gt_last_summary_row {
+#pchvjqtevt .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -858,7 +857,7 @@ Attaching package: 'janitor'</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_grand_summary_row {
+#pchvjqtevt .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -868,7 +867,7 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 5px;
 }
 
-#mfgqhhjbtj .gt_first_grand_summary_row {
+#pchvjqtevt .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -878,7 +877,7 @@ Attaching package: 'janitor'</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_last_grand_summary_row_top {
+#pchvjqtevt .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -888,11 +887,11 @@ Attaching package: 'janitor'</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_striped {
+#pchvjqtevt .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#mfgqhhjbtj .gt_table_body {
+#pchvjqtevt .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -901,7 +900,7 @@ Attaching package: 'janitor'</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_footnotes {
+#pchvjqtevt .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -915,7 +914,7 @@ Attaching package: 'janitor'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_footnote {
+#pchvjqtevt .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -924,7 +923,7 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 5px;
 }
 
-#mfgqhhjbtj .gt_sourcenotes {
+#pchvjqtevt .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -938,7 +937,7 @@ Attaching package: 'janitor'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#mfgqhhjbtj .gt_sourcenote {
+#pchvjqtevt .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -946,72 +945,72 @@ Attaching package: 'janitor'</code></pre>
   padding-right: 5px;
 }
 
-#mfgqhhjbtj .gt_left {
+#pchvjqtevt .gt_left {
   text-align: left;
 }
 
-#mfgqhhjbtj .gt_center {
+#pchvjqtevt .gt_center {
   text-align: center;
 }
 
-#mfgqhhjbtj .gt_right {
+#pchvjqtevt .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#mfgqhhjbtj .gt_font_normal {
+#pchvjqtevt .gt_font_normal {
   font-weight: normal;
 }
 
-#mfgqhhjbtj .gt_font_bold {
+#pchvjqtevt .gt_font_bold {
   font-weight: bold;
 }
 
-#mfgqhhjbtj .gt_font_italic {
+#pchvjqtevt .gt_font_italic {
   font-style: italic;
 }
 
-#mfgqhhjbtj .gt_super {
+#pchvjqtevt .gt_super {
   font-size: 65%;
 }
 
-#mfgqhhjbtj .gt_footnote_marks {
+#pchvjqtevt .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#mfgqhhjbtj .gt_asterisk {
+#pchvjqtevt .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#mfgqhhjbtj .gt_indent_1 {
+#pchvjqtevt .gt_indent_1 {
   text-indent: 5px;
 }
 
-#mfgqhhjbtj .gt_indent_2 {
+#pchvjqtevt .gt_indent_2 {
   text-indent: 10px;
 }
 
-#mfgqhhjbtj .gt_indent_3 {
+#pchvjqtevt .gt_indent_3 {
   text-indent: 15px;
 }
 
-#mfgqhhjbtj .gt_indent_4 {
+#pchvjqtevt .gt_indent_4 {
   text-indent: 20px;
 }
 
-#mfgqhhjbtj .gt_indent_5 {
+#pchvjqtevt .gt_indent_5 {
   text-indent: 25px;
 }
 
-#mfgqhhjbtj .katex-display {
+#pchvjqtevt .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#mfgqhhjbtj div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#pchvjqtevt div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>

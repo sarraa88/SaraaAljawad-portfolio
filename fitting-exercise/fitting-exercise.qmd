@@ -642,5 +642,69 @@ ggplot(boot_summary_df, aes(x = observed)) +
   ) +
   theme_minimal()
 ```
+
 # Discussion
 This plot shows that the model is moderately accurate, as the points generally cluster around the dashed 45-degree line, though there is a noticeable amount of scatter. The vertical distance between the green (upper) and red (lower) points reveals maybe some prediction uncertainty. The black and blue dots are very tightly clustered. This means the model's central tendency is reliable and isn't being wildly tossed around by small changes in the training data.
+
+
+```{r}
+# final evaluation on test data
+
+# predictions for model 2 on training data
+pred_train_m2 <- predict(lm_fit_10_2, new_data = train_data) %>%
+  bind_cols(train_data %>% select(Y)) %>%
+  mutate(dataset = "Train")
+
+# predictions for model 2 on test data
+pred_test_m2 <- predict(lm_fit_10_2, new_data = test_data) %>%
+  bind_cols(test_data %>% select(Y)) %>%
+  mutate(dataset = "Test")
+
+head(pred_train_m2)
+head(pred_test_m2)
+
+pred_both_m2 <- bind_rows(pred_train_m2, pred_test_m2)
+
+head(pred_both_m2)
+table(pred_both_m2$dataset)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(pred_both_m2, aes(x = Y, y = .pred, color = dataset)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  scale_x_continuous(limits = c(0, 6000), breaks = seq(0, 5500, by = 1000)) +
+  scale_y_continuous(limits = c(0, 6000), breaks = seq(0, 6000, by = 1000)) +
+  labs(
+    title = "Observed vs Predicted (Model 2)",
+    x = "Observed",
+    y = "Predicted"
+  ) +
+  theme_minimal()
+```
+
+Final evaluation using the test data showed that predictions from model 2 generalize well to unseen data. In the combined plot, the test data points are mixed with the training data and follow a similar trend along the diagonal line, indicating that the model is not overfitting and performs consistently across both datasets.
+
+```{r}
+library(yardstick)
+
+# RMSE for training
+rmse_train <- rmse(pred_train_m2, truth = Y, estimate = .pred)
+
+# RMSE for test
+rmse_test <- rmse(pred_test_m2, truth = Y, estimate = .pred)
+
+rmse_train
+rmse_test
+```
+
+The RMSE values for the training and test datasets are close, indicating that the model performs consistently on both datasets. The slightly lower RMSE for the test data suggests that the model generalizes well and does not show evidence of overfitting.
+
+## Overall model assessment
+
+To assess the models, I compared their RMSE values on the training data, their cross-validation performance, and the final test-set behavior of model 2. Lower RMSE indicates better predictive performance.
+Both model 1 and model 2 performed better than the null model, indicating that including predictors improves prediction accuracy. Model 1 has lower RMSE compared with the null model, indicating that DOSE is an important predictor of Y and has a meaningful relationship with the outcome. Model 2 further improved performance beyond model 1. This suggests that adding AGE, SEX, WT, and HT provided additional predictive information beyond DOSE alone. The cross-validation results supported the same pattern, with model 2 continuing to have a lower RMSE than model 1, which makes the improvement more convincing and less likely to be due only to the particular training set split.
+The final test-set evaluation of model 2 also suggested that the model generalizes reasonably well. The test points were mixed with the training points in the observed versus predicted plot, and the training and test RMSE values were closer.
+Overall, model 1 is useful as a simple baseline model, but it is probably too limited for more reliable prediction on its own. Model 2 is the strongest model among those considered here and appears more useful because it performs better and generalizes reasonably well, although it is still not a perfect predictor since there is still noticeable spread around the diagonal in the prediction plot.
