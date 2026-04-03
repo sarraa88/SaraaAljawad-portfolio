@@ -1,0 +1,374 @@
+---
+title: "Ml-Models-Exercise"
+format: html
+---
+
+## Preliminaries
+
+
+```{r}
+library(tidymodels)
+library(tidyverse)
+library(ggplot2)
+
+rngseed <- 1234
+set.seed(rngseed)
+
+dat <- readRDS("dat_clean.rds")
+
+glimpse(dat)
+```
+
+
+## More processing
+
+
+```{r}
+dat <- dat %>%
+  mutate(RACE = case_when(
+    RACE %in% c(7, 88) ~ 3,
+    TRUE ~ as.numeric(RACE)
+  ))
+
+table(dat$RACE)
+```
+
+## Pairwise correlations
+
+
+```{r}
+library(GGally)
+
+dat %>%
+  select(Y, DOSE, AGE, WT, HT) %>%
+  ggpairs()
+```
+
+The pairwise correlation plot shows that some variables are moderately correlated, such as dose and outcome (Y), and weight and height. However, none of the correlations are extremely high (e.g., above 0.9), indicating that multicollinearity is not a major concern in this dataset.
+
+## Feature engineering
+
+
+```{r}
+dat <- dat %>%
+  mutate(BMI = WT / (HT^2))
+
+summary(dat$BMI)
+```
+
+A new variable BMI was created using weight and height, defined as weight in kilograms divided by height in meters squared. Based on the observed values, no unit conversion was required.
+
+## Model building
+
+
+```{r}
+formula <- Y ~ DOSE + AGE + SEX + RACE + WT + HT + BMI
+```
+
+### First Fit 
+
+#### Linear model (Model 1)
+
+```{r}
+lm_model <- linear_reg() %>%
+  set_engine("lm")
+
+lm_workflow <- workflow() %>%
+  add_model(lm_model) %>%
+  add_formula(formula)
+
+lm_fit_first <- fit(lm_workflow, data = dat)
+
+lm_pred_first <- predict(lm_fit_first, new_data = dat) %>%
+  bind_cols(dat)
+
+rmse(lm_pred_first, truth = Y, estimate = .pred)
+```
+
+
+```{r}
+ggplot(lm_pred_first, aes(x = Y, y = .pred)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    title = "Observed vs Predicted: Linear Model",
+    x = "Observed Y",
+    y = "Predicted Y"
+  ) +
+  theme_minimal()
+```
+
+The observed versus predicted plot shows that predictions generally follow the diagonal line, indicating reasonable agreement between predicted and observed values, though some variability remains.
+
+#### LASSO model (Model 2)
+
+```{r}
+lasso_model_simple <- linear_reg(penalty = 0.1, mixture = 1) %>%
+  set_engine("glmnet")
+
+lasso_recipe <- recipe(formula, data = dat) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors(), -all_outcomes())
+
+lasso_workflow_simple <- workflow() %>%
+  add_model(lasso_model_simple) %>%
+  add_recipe(lasso_recipe)
+
+lasso_fit_first <- fit(lasso_workflow_simple, data = dat)
+
+lasso_pred_first <- predict(lasso_fit_first, new_data = dat) %>%
+  bind_cols(dat)
+
+rmse(lasso_pred_first, truth = Y, estimate = .pred)
+```
+
+```{r}
+ggplot(lasso_pred_first, aes(x = Y, y = .pred)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    title = "Observed vs Predicted: LASSO Model",
+    x = "Observed Y",
+    y = "Predicted Y"
+  ) +
+  theme_minimal()
+```
+
+The LASSO model produced nearly identical results to the linear regression model, with an RMSE of approximately 581. This is expected because the penalty parameter is relatively small and does not strongly shrink the coefficients, making the model behave similarly to standard linear regression.
+
+#### Random Forest (Model 3)
+
+
+```{r}
+rf_model_simple <- rand_forest(trees = 500) %>%
+  set_engine("ranger", seed = rngseed) %>%
+  set_mode("regression")
+
+rf_recipe <- recipe(formula, data = dat) %>%
+  step_dummy(all_nominal_predictors())
+
+rf_workflow_simple <- workflow() %>%
+  add_model(rf_model_simple) %>%
+  add_recipe(rf_recipe)
+
+rf_fit_first <- fit(rf_workflow_simple, data = dat)
+
+rf_pred_first <- predict(rf_fit_first, new_data = dat) %>%
+  bind_cols(dat)
+
+rmse(rf_pred_first, truth = Y, estimate = .pred)
+```
+
+
+```{r}
+ggplot(rf_pred_first, aes(x = Y, y = .pred)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    title = "Observed vs Predicted: Random Forest",
+    x = "Observed Y",
+    y = "Predicted Y"
+  ) +
+  theme_minimal()
+```
+
+
+
+The random forest model achieved the best performance in the first-fit setting, with an RMSE of approximately 359, which is lower than both the linear and LASSO models. The observed versus predicted plot also shows predictions closer to the diagonal line. This indicates that random forest fits the training data very well, although this strong performance may reflect overfitting rather than better generalization.
+
+### Tuning the models
+
+#### LASSO tuning without CV
+
+
+```{r}
+lasso_model_tune <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+lasso_recipe <- recipe(formula, data = dat) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_normalize(all_numeric_predictors(), -all_outcomes())
+
+lasso_workflow_tune <- workflow() %>%
+  add_model(lasso_model_tune) %>%
+  add_recipe(lasso_recipe)
+
+lasso_grid <- tibble(
+  penalty = 10^seq(-5, 2, length.out = 50)
+)
+
+lasso_app <- apparent(dat)
+
+set.seed(rngseed)
+
+lasso_tune_no_cv <- tune_grid(
+  lasso_workflow_tune,
+  resamples = lasso_app,
+  grid = lasso_grid,
+  metrics = metric_set(rmse),
+  control = control_grid(save_pred = TRUE)
+)
+
+lasso_preds_no_cv <- collect_predictions(lasso_tune_no_cv)
+
+lasso_rmse_no_cv <- lasso_preds_no_cv %>%
+  group_by(penalty) %>%
+  rmse(truth = Y, estimate = .pred)
+
+lasso_rmse_no_cv %>%
+  arrange(.estimate)
+
+ggplot(lasso_rmse_no_cv, aes(x = penalty, y = .estimate)) +
+  geom_line() +
+  geom_point() +
+  scale_x_log10() +
+  labs(
+    title = "LASSO tuning without CV",
+    x = "Penalty",
+    y = "RMSE"
+  ) +
+  theme_minimal()
+```
+
+The LASSO tuning results show that the lowest RMSE occurs at very small penalty values, and RMSE increases as the penalty becomes larger. This happens because a small penalty makes the model behave similarly to ordinary linear regression, while larger penalties shrink the coefficients more strongly and reduce model flexibility. Since the linear model already fits the data well, increasing the penalty does not improve performance and instead makes it worse.
+
+#### Random Forest tuning without CV
+
+
+```{r}
+rf_model_tune <- rand_forest(
+  mtry = tune(),
+  min_n = tune(),
+  trees = 300
+) %>%
+  set_engine("ranger", seed = rngseed) %>%
+  set_mode("regression")
+
+rf_recipe <- recipe(formula, data = dat) %>%
+  step_dummy(all_nominal_predictors())
+
+rf_workflow_tune <- workflow() %>%
+  add_model(rf_model_tune) %>%
+  add_recipe(rf_recipe)
+
+rf_grid <- grid_regular(
+  mtry(range = c(1, 7)),
+  min_n(range = c(1, 21)),
+  levels = 7
+)
+
+rf_app <- apparent(dat)
+
+set.seed(rngseed)
+
+rf_tune_no_cv <- tune_grid(
+  rf_workflow_tune,
+  resamples = rf_app,
+  grid = rf_grid,
+  metrics = metric_set(rmse),
+  control = control_grid(save_pred = TRUE)
+)
+
+rf_preds_no_cv <- collect_predictions(rf_tune_no_cv)
+
+rf_rmse_no_cv <- rf_preds_no_cv %>%
+  group_by(mtry, min_n) %>%
+  rmse(truth = Y, estimate = .pred)
+
+rf_rmse_no_cv %>%
+  arrange(.estimate)
+```
+
+
+```{r}
+ggplot(rf_rmse_no_cv, aes(x = factor(mtry), y = factor(min_n), fill = .estimate)) +
+  geom_tile() +
+  labs(
+    title = "Random Forest tuning without CV",
+    x = "mtry",
+    y = "min_n",
+    fill = "RMSE"
+  ) +
+  theme_minimal()
+```
+
+The random forest tuning results show that the lowest RMSE values occur for higher values of `mtry` and lower values of `min_n`. This combination allows the model to be more flexible and better fit the training data. Since tuning is performed without cross-validation, the model is evaluated on the same data used for training, which leads to very low RMSE values and potential overfitting. This demonstrates how flexible models like random forests can achieve strong performance on training data, but this may not generalize well to new data.
+
+### Tuning with cross-validation
+
+#### LASSO tuning with CV
+
+
+```{r}
+set.seed(rngseed)
+
+folds <- vfold_cv(dat, v = 5, repeats = 5)
+
+lasso_model_cv <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+lasso_workflow_cv <- workflow() %>%
+  add_model(lasso_model_cv) %>%
+  add_recipe(lasso_recipe)
+
+lasso_grid <- tibble(
+  penalty = 10^seq(-5, 2, length.out = 50)
+)
+
+lasso_tune_cv <- tune_grid(
+  lasso_workflow_cv,
+  resamples = folds,
+  grid = lasso_grid,
+  metrics = metric_set(rmse)
+)
+
+autoplot(lasso_tune_cv)
+
+show_best(lasso_tune_cv, metric = "rmse")
+```
+
+The LASSO tuning results using CV  show that the best performance still occurs at small penalty values, with an RMSE of approximately 615. Compared to tuning without CV, the RMSE is higher, which is expected because the model is now evaluated on unseen data rather than the training data. This provides a more realistic estimate of performance and reduces overfitting. As the penalty increases, RMSE worsens because stronger regularization shrinks the coefficients and reduces model flexibility.
+
+#### Random Forest tuning with CV
+
+
+```{r}
+rf_model_cv <- rand_forest(
+  mtry = tune(),
+  min_n = tune(),
+  trees = 300
+) %>%
+  set_engine("ranger", seed = rngseed) %>%
+  set_mode("regression")
+
+rf_workflow_cv <- workflow() %>%
+  add_model(rf_model_cv) %>%
+  add_recipe(rf_recipe)
+
+rf_grid <- grid_regular(
+  mtry(range = c(1, 7)),
+  min_n(range = c(1, 21)),
+  levels = 7
+)
+
+set.seed(rngseed)
+
+rf_tune_cv <- tune_grid(
+  rf_workflow_cv,
+  resamples = folds,   # <-- your 5x5 CV here
+  grid = rf_grid,
+  metrics = metric_set(rmse)
+)
+
+autoplot(rf_tune_cv)
+
+show_best(rf_tune_cv, metric = "rmse")
+```
+
+The random forest tuning results using CV show higher RMSE values compared to tuning without CV, indicating reduced overfitting and a more realistic estimate of performance. The best performance occurs at higher values of `mtry` and moderate values of `min_n`, which balance model flexibility and stability. Compared to the LASSO model, random forest now has a higher RMSE, suggesting that it does not generalize as well to unseen data in this case. This highlights that more complex models do not always perform better when evaluated properly.
+
+## Conclusion
+
+This exercise showed that more flexible models can fit the training data very well, but this does not necessarily mean they generalize well to new data. In the first-fit setting, the random forest achieved the lowest RMSE because it was evaluated on the same data used for training. However, once tuning was performed with repeated cross-validation, the random forest performed worse than the LASSO model. The LASSO achieved the best overall performance under proper evaluation, indicating that a simpler regularized model generalized better for this dataset.
+
+*Notes on AI use: AI tools (ChatGPT) were used to assist in understanding the coding and refining explanations.*
