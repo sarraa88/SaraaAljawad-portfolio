@@ -1,0 +1,440 @@
+---
+title: "TidyTuesday Exercise"
+format: html
+---
+## Introduction
+
+## Data Source
+This analysis uses data from the TidyTuesday project, a weekly data science initiative that provides real-world datasets for practice.
+
+The dataset for this week was obtained from the TidyTuesday GitHub repository.
+
+This dataset focuses on bird sightings at sea, recorded from ship-based observations between 1969 and 1990. The data includes information on bird species, counts, behavior, location, and environmental conditions such as weather and sea state.
+
+## Data Cleaning and Wrangling
+
+```{r}
+library(tidyverse)
+
+birds <- read_csv("data/birds.csv")
+ships <- read_csv("data/ships.csv")
+sea_states <- read_csv("data/sea_states.csv")
+beaufort_scale <- read_csv("data/beaufort_scale.csv")
+
+```
+
+```{r}
+head(birds)
+```
+
+```{r}
+glimpse(birds)
+```
+
+```{r}
+summary(birds)
+```
+
+```{r}
+head(ships)
+```
+
+```{r}
+glimpse(ships)
+```
+
+## Exploratory Data Analysis (EDA)
+
+```{r}
+ggplot(ships, aes(x = sea_state_class)) +
+  geom_bar() +
+  labs(title = "Distribution of Sea State",
+       x = "Sea State Class",
+       y = "Count")
+```
+
+Sea state is measured on a scale from 0 (calm) to 6 (very rough). The distribution shows that most observations occur at moderate sea conditions (classes 3–4), while very calm and very rough conditions are less frequent.
+
+```{r}
+ggplot(ships, aes(x = wind_speed_class)) +
+  geom_bar() +
+  labs(title = "Distribution of Wind Speed (Beaufort Scale)",
+       x = "Wind Speed Class",
+       y = "Count")
+```
+
+```{r}
+ggplot(ships, aes(x = sea_state_class, fill = factor(wind_speed_class))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Sea State vs Wind Speed",
+       x = "Sea State",
+       fill = "Wind Class")
+```
+
+The relationship between sea state and wind speed shows that higher sea states tend to occur with higher wind speeds. Calm sea conditions are generally associated with low wind speeds, while rougher sea conditions correspond to moderate to high wind levels.
+
+## Research Question
+
+This analysis investigates whether environmental conditions affect the presence of albatross during ship-based observations.
+
+The outcome of interest is albatross presence (present vs absent). The main predictor is sea state class, and wind speed class (Beaufort scale) is included as a secondary predictor.
+
+Specifically, we ask: Does sea state affect the presence of albatross, after accounting for wind speed?
+
+## Data Preparation for Modeling
+
+
+```{r}
+# create binary outcome: 1 = albatross present, 0 = absent
+birds_albatross <- birds %>%
+  filter(str_detect(species_common_name, regex("albatross", ignore_case = TRUE))) %>%
+  group_by(record_id) %>%
+  summarise(albatross_present = ifelse(sum(count) > 0, 1, 0))
+```
+
+```{r}
+head(birds_albatross)
+```
+
+```{r}
+data <- ships %>%
+  left_join(birds_albatross, by = "record_id") %>%
+  mutate(albatross_present = ifelse(is.na(albatross_present), 0, albatross_present))
+```
+
+
+```{r}
+data <- data %>%
+  select(sea_state_class, wind_speed_class, albatross_present) %>%
+  drop_na()
+```
+
+```{r}
+data <- data %>%
+  mutate(albatross_present = factor(albatross_present))
+```
+
+```{r}
+data %>%
+  count(albatross_present)
+```
+
+```{r}
+glimpse(data)
+```
+
+```{r}
+ggplot(data, aes(x = sea_state_class, fill = albatross_present)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proportion of Albatross Presence by Sea State",
+    x = "Sea State Class",
+    y = "Proportion",
+    fill = "Albatross Presence"
+  )
+```
+
+The plot suggests that albatross presence increases with higher sea-state classes. In calmer conditions, albatross are less frequently observed, while in rougher sea conditions, the proportion of observations with albatross is higher. This pattern indicates that sea state may be an important predictor of albatross presence and supports further modeling.
+
+
+Based on the exploratory data analysis, sea state appears to be associated with albatross presence, with higher sea states showing a higher proportion of presence. Wind speed also appears related to sea conditions and may influence observations.
+
+Based on these observations, I proceed to build predictive models to evaluate whether these variables can reliably predict albatross presence.
+
+## Modeling
+
+## Modeling Setup
+
+```{r}
+library(tidymodels)
+
+set.seed(123)
+# split data into training (75%) and testing (25%)
+
+data_split <- initial_split(data, prop = 0.75, strata = albatross_present)
+
+train_data <- training(data_split)
+test_data  <- testing(data_split)
+```
+
+```{r}
+tibble(
+  set = c("training", "test"),
+  rows = c(nrow(train_data), nrow(test_data))
+)
+```
+
+The dataset was split into training (75%) and test (25%) sets using stratified sampling to preserve the proportion of albatross presence in both sets.
+
+To compare models fairly, model development was carried out on the training data using cross-validation. Since the outcome is binary (albatross present or absent), classification models are appropriate. Sea state and wind speed were used as predictors.
+
+```{r}
+# create 5-fold cross-validation for model evaluation
+cv_folds <- vfold_cv(train_data, v = 5, strata = albatross_present)
+
+albatross_recipe <- recipe(
+  albatross_present ~ sea_state_class + wind_speed_class,
+  data = train_data
+)
+
+class_metrics <- metric_set(roc_auc, accuracy, sens, spec)
+```
+
+Three different classification models were considered:
+- Logistic regression 
+- LASSO 
+- Random forest 
+
+## Model 1: Logistic Regression
+
+Logistic regression was used as the first model because it is a simple and interpretable method for binary classification. It provides a useful baseline for comparison with more flexible models.
+
+```{r}
+log_model <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+log_workflow <- workflow() %>%
+  add_model(log_model) %>%
+  add_recipe(albatross_recipe)
+
+log_results <- fit_resamples(
+  log_workflow,
+  resamples = cv_folds,
+  metrics = class_metrics
+)
+```
+
+```{r}
+collect_metrics(log_results)
+```
+
+
+
+## Model 2: LASSO 
+
+LASSO  was used as a second model because it extends logistic regression by applying regularization, which can help control model complexity while maintaining interpretability.
+
+```{r}
+lasso_spec <- logistic_reg(
+  penalty = tune(),
+  mixture = 1
+) %>%
+  set_engine("glmnet") %>%
+  set_mode("classification")
+
+lasso_workflow <- workflow() %>%
+  add_recipe(albatross_recipe) %>%
+  add_model(lasso_spec)
+```
+
+
+```{r}
+lasso_grid <- grid_regular(
+  penalty(),
+  levels = 20
+)
+```
+
+```{r}
+lasso_results <- tune_grid(
+  lasso_workflow,
+  resamples = cv_folds,
+  grid = lasso_grid,
+  metrics = class_metrics
+)
+```
+
+```{r}
+show_best(lasso_results, metric = "roc_auc")
+```
+
+
+
+## Model 3: Random Forest
+
+Random forest was used as a third model because it can capture more flexible and potentially non-linear relationships between predictors and albatross presence.
+
+```{r}
+rf_spec <- rand_forest(
+  mtry = tune(),
+  min_n = tune(),
+  trees = 500
+) %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+rf_workflow <- workflow() %>%
+  add_recipe(albatross_recipe) %>%
+  add_model(rf_spec)
+
+```
+
+
+
+```{r}
+rf_grid <- grid_regular(
+  mtry(range = c(1L, 2L)),
+  min_n(range = c(2L, 20L)),
+  levels = 5
+)
+```
+
+
+
+```{r}
+rf_results <- tune_grid(
+  rf_workflow,
+  resamples = cv_folds,
+  grid = rf_grid,
+  metrics = class_metrics
+)
+```
+
+```{r}
+show_best(rf_results, metric = "roc_auc")
+```
+
+
+## Compare Models
+
+To compare the models fairly, this is a summary of the cross-validated ROC AUC results for each model.
+
+```{r}
+log_summary <- collect_metrics(log_results) %>%
+  filter(.metric == "roc_auc") %>%
+  transmute(model = "Logistic regression", mean, std_err)
+
+lasso_summary <- show_best(lasso_results, metric = "roc_auc", n = 1) %>%
+  transmute(model = "LASSO", mean, std_err)
+
+rf_summary <- show_best(rf_results, metric = "roc_auc", n = 1) %>%
+  transmute(model = "Random forest", mean, std_err)
+
+bind_rows(log_summary, lasso_summary, rf_summary) %>%
+  arrange(desc(mean))
+```
+
+The comparison shows that all models perform similarly, with ROC AUC values around 0.60. The random forest achieved the highest performance, but only slightly better than logistic regression.
+
+This suggests that the relationship between predictors and outcome is relatively weak and likely does not require complex models. The small improvement from more flexible models indicates limited additional predictive signal in the data.
+
+## Model Selection
+
+Although the random forest model achieved the highest ROC AUC during cross-validation, the difference compared with logistic regression was very small. In contrast, logistic regression provided nearly the same performance while remaining simpler and easier to interpret.
+
+Logistic regression was therefore selected as the final model because it offers a better balance between predictive performance and interpretability. In addition, the more complex models did not provide a meaningful improvement, suggesting that the relationship between the available predictors and albatross presence is relatively simple.
+
+## Final Model Evaluation 
+
+```{r}
+final_log_fit <- fit(log_workflow, data = train_data)
+```
+
+```{r}
+# generate class predictions and probabilities on test data
+log_test_results <- test_data %>%
+  bind_cols(predict(final_log_fit, test_data)) %>%
+  bind_cols(predict(final_log_fit, test_data, type = "prob"))
+```
+
+```{r}
+class_metrics(log_test_results, truth = albatross_present, estimate = .pred_class, .pred_1)
+```
+
+```{r}
+log_test_results %>%
+  roc_curve(truth = albatross_present, .pred_1) %>%
+  autoplot()
+```
+
+```{r}
+conf_mat(log_test_results, truth = albatross_present, estimate = .pred_class)
+```
+
+
+The performance of the final model on the test data shows limited predictive ability. While the accuracy is moderate, the sensitivity is very low, indicating that the model struggles to correctly identify cases where albatross are present.
+
+The ROC curve further confirms this, with a low AUC value, suggesting poor discrimination between presence and absence.
+
+Overall, the model performs only slightly better than random guessing and does not provide strong predictive power.
+
+The confusion matrix further supports this, showing a large number of misclassifications, particularly false positives, indicating difficulty in distinguishing between the two classes.
+
+## Interpretation of the Final Logistic Regression Model
+
+```{r}
+library(broom)
+
+tidy(final_log_fit) %>%
+  mutate(odds_ratio = exp(estimate))
+```
+
+```{r}
+
+test_grid <- crossing(
+  sea_state_class = seq(min(test_data$sea_state_class), max(test_data$sea_state_class), by = 1),
+  wind_speed_class = median(test_data$wind_speed_class)
+)
+
+test_curve <- test_grid %>%
+  bind_cols(
+    predict(final_log_fit, new_data = test_grid, type = "prob")
+  )
+
+# plot
+ggplot() +
+  geom_point(
+    data = test_data,
+    aes(
+      x = sea_state_class,
+      y = as.numeric(albatross_present == 1)
+    ),
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = test_curve,
+    aes(x = sea_state_class, y = .pred_1),
+    linewidth = 1
+  ) +
+  labs(
+    title = "Predicted probability curve on test data",
+    x = "Sea state",
+    y = "Probability of albatross presence"
+  )
+```
+
+
+The predicted probability curve shows a slight increase in the probability of albatross presence as sea state increases. However, the observed data points remain highly scattered, with both presence and absence occurring across all sea state values. This indicates that while the model captures a general trend, it does not clearly separate the two classes.
+
+This observation is consistent with the performance metrics on the test data, where the model showed low sensitivity and low ROC AUC. The model appears to struggle in correctly identifying positive cases and exhibits high uncertainty in its predictions.
+
+## Model Limitations
+
+The model predictions remain uncertain, as probabilities do not strongly approach 0 or 1 and observed outcomes overlap across predictor values. This indicates that the model lacks confidence in distinguishing between presence and absence.
+
+One possible reason for this is that important predictors may be missing from the analysis. Environmental factors beyond sea state and wind speed, such as location or time, may influence albatross presence.
+
+Additionally, the variability observed in the data suggests that the relationship between predictors and outcome may be inherently noisy, limiting the achievable predictive performance.
+
+# Discussion
+
+## Summary of Findings
+
+This analysis investigated whether sea state and wind speed can predict albatross presence. While exploratory analysis suggested a potential relationship, predictive modeling showed that this relationship is weak.
+
+All models achieved similar performance, with only slight improvements from more complex approaches. Logistic regression was selected as the final model due to its simplicity and comparable performance.
+
+## Interpretation
+
+The results indicate that while sea state may influence albatross presence, it is not sufficient on its own to accurately predict observations. The high variability in the data suggests that other environmental or biological factors may play an important role.
+
+## Limitations
+
+One limitation of this analysis is the limited set of predictors. Additional variables such as location, time of year, or food availability may improve model performance.
+
+Another limitation is the relatively low predictive power of all models, indicating that the problem may be inherently noisy.
+
+## Conclusion
+
+Overall, this analysis demonstrates that while environmental conditions show some association with albatross presence, they are not strong predictors. More comprehensive data would be needed to build a reliable predictive model.
